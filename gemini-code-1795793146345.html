@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Phụ Huynh - Smart Attendee</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="firebase.config.js"></script>
+    <style>
+        body { margin: 0; min-height: 100vh; background: url('https://static.vinwonders.com/2023/02/kinh-thanh-hue-4.jpg') no-repeat center center fixed; background-size: cover; font-family: sans-serif; color: white; padding: 20px; display: flex; justify-content: center; align-items: center; box-sizing: border-box; }
+        .card { background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(10px); padding: 24px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.1); width: 100%; max-width: 420px; }
+        h3 { margin-top: 0; color: #ffeaa7; }
+        .row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #444; font-size: 14px; }
+        .alert-banner { display: none; background: rgba(255, 118, 117, 0.25); border: 1px solid #ff7675; color: #ffeaa7; padding: 10px; border-radius: 8px; margin-bottom: 12px; font-size: 13px; }
+        textarea { width: 100%; box-sizing: border-box; padding: 10px; margin: 12px 0 8px; border-radius: 5px; border: none; min-height: 75px; font-family: sans-serif; }
+        button { width: 100%; padding: 11px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; margin-top: 6px; }
+        .btn-main { background: #55efc4; color: #000; }
+        .btn-exit { background: #636e72; color: #fff; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h3>THEO DÕI PHỤ HUYNH</h3>
+        <div id="alert-0715" class="alert-banner">CẢNH BÁO ĐỎ 07:15: Con chưa có mặt tại lớp và chưa có đơn nghỉ được duyệt.</div>
+
+        <div class="row"><span>Mã học sinh:</span><b id="ph_code">---</b></div>
+        <div class="row"><span>Họ và tên con:</span><b id="ph_ten">---</b></div>
+        <div class="row"><span>Trạng thái hiện tại:</span><b id="ph_tt" style="color:#55efc4">---</b></div>
+        <div class="row"><span>Điểm rèn luyện:</span><b id="ph_drl" style="color:#ffeaa7">100</b></div>
+
+        <textarea id="ph_ly_do" placeholder="Phụ huynh nhập lý do xin nghỉ thay cho con..."></textarea>
+        <button class="btn-main" onclick="phGuiNghi()">GỬI XIN PHÉP CHO CON</button>
+        <button class="btn-exit" onclick="window.location.href='index.html'">THOÁT</button>
+    </div>
+
+    <script>
+        var idHS = localStorage.getItem('sa_parent_student_id');
+        if (!idHS) window.location.href = 'index.html';
+
+        database.ref('users/' + idHS).on('value', (snap) => {
+            var s = snap.val();
+            if (!s) return;
+            document.getElementById('ph_code').innerText = idHS;
+            document.getElementById('ph_ten').innerText = s.ten || "---";
+            document.getElementById('ph_tt').innerText = s.trang_thai || "Chưa điểm danh";
+            document.getElementById('ph_drl').innerText = s.diem_ren_luyen ?? 100;
+
+            var isAlert = Boolean(s.canh_bao_do) || (s.trang_thai && s.trang_thai.indexOf("Cảnh báo đỏ") !== -1);
+            document.getElementById('alert-0715').style.display = isAlert ? 'block' : 'none';
+            document.getElementById('ph_tt').style.color = isAlert ? '#ff7675' : '#55efc4';
+        });
+
+        function phGuiNghi() {
+            var lyDo = document.getElementById('ph_ly_do').value.trim();
+            if (!lyDo) return alert("Vui lòng nhập lý do xin nghỉ!");
+            database.ref('users/' + idHS).update({
+                ly_do: "PH xin phép: " + lyDo,
+                trang_thai: "Chờ duyệt nghỉ",
+                canh_bao_do: false
+            }).then(() => {
+                alert("Đã gửi đơn xin phép tới giáo viên!");
+                document.getElementById('ph_ly_do').value = "";
+            });
+        }
+    </script>
+</body>
+</html>
