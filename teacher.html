@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cổng Giáo Viên & Quản Lý - Hệ Thống Quản Lý (teacher.html)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #0b192c;
+      background-image:
+        linear-gradient(135deg, rgba(11, 25, 44, 0.78) 0%, rgba(15, 23, 42, 0.78) 100%),
+        url('https://images.unsplash.com/photo-1583417319070-4a69db38a482?auto=format&fit=crop&w=1920&q=80');
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+      min-height: 100vh;
+    }
+    .gv-glass {
+      background: rgba(15, 23, 42, 0.76);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.35);
+    }
+  </style>
+</head>
+<body class="min-h-screen p-4 sm:p-6 text-white">
+
+  <div class="max-w-6xl mx-auto space-y-6">
+    <!-- Header Giáo viên (Giống Hình 2.2 Báo cáo) -->
+    <header class="gv-glass rounded-3xl p-5 flex flex-wrap items-center justify-between gap-3">
+      <div>
+        <h1 id="gvTitle" class="text-xl sm:text-2xl font-black text-white">GV: Cô Hiền</h1>
+        <p class="text-xs text-cyan-300">File độc lập: <b>teacher.html</b> • <span id="pageSyncStatus">Real-time Sync</span></p>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-2">
+        <button onclick="switchGvTab('class')" id="gvBtn-class" class="px-3.5 py-2 rounded-xl text-xs font-extrabold bg-emerald-400 text-slate-950">Lớp & Đi trễ</button>
+        <button onclick="switchGvTab('leaves')" id="gvBtn-leaves" class="px-3.5 py-2 rounded-xl text-xs font-bold bg-white/10 hover:bg-white/20">Duyệt nghỉ phép (<span id="leaveBadge">0</span>)</button>
+        <button onclick="switchGvTab('rooms')" id="gvBtn-rooms" class="px-3.5 py-2 rounded-xl text-xs font-bold bg-white/10 hover:bg-white/20">Đặt phòng (<span id="roomBadge">0</span>)</button>
+        <button onclick="exitTeacher()" class="px-4 py-2 rounded-xl border border-white/30 hover:bg-rose-600 hover:border-rose-500 text-xs font-extrabold uppercase transition">
+          THOÁT
+        </button>
+      </div>
+    </header>
+
+    <!-- TAB 1: DANH SÁCH LỚP, ĐI TRỄ & CẤP TÀI KHOẢN MỚI (BÁM SÁT HÌNH 2.2) -->
+    <div id="gvTab-class" class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      <div class="lg:col-span-7 gv-glass rounded-3xl p-6 space-y-4">
+        <!-- Thanh cảnh báo đỏ nổi bật danh sách đi trễ giống Hình 2.2 -->
+        <div id="lateRedAlert" class="rounded-2xl bg-gradient-to-r from-rose-700 to-red-600 border border-rose-400/40 px-4 py-3 flex items-center gap-3 shadow-lg">
+          <i class="fa-solid fa-bell text-amber-300 text-lg"></i>
+          <div id="lateRedAlertText" class="text-xs sm:text-sm font-black uppercase tracking-wide">
+            TRỄ: NGÔ HOÀNG ANH QUÂN
+          </div>
+        </div>
+
+        <!-- Danh sách thẻ học sinh với nút - và + giống Hình 2.2 -->
+        <div id="studentCardsContainer" class="space-y-3"></div>
+      </div>
+
+      <!-- Khung CẤP TÀI KHOẢN MỚI giống Hình 2.2 -->
+      <div class="lg:col-span-5 gv-glass rounded-3xl p-6 space-y-4">
+        <h2 class="text-sm sm:text-base font-black uppercase tracking-wider text-cyan-300 border-b border-white/15 pb-3">
+          CẤP TÀI KHOẢN MỚI
+        </h2>
+        <form onsubmit="handleCreateUser(event)" class="space-y-3">
+          <select id="createRole" class="w-full px-3.5 py-3 rounded-xl bg-white/10 border border-white/20 text-white text-sm font-bold">
+            <option value="student" class="text-slate-900">Học sinh / Sinh viên</option>
+            <option value="parent" class="text-slate-900">Phụ huynh</option>
+            <option value="teacher" class="text-slate-900">Giáo viên / Quản lý</option>
+          </select>
+          <input id="createId" type="text" required placeholder="Mã học sinh (VD: HS04)"
+            class="w-full px-3.5 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-slate-400 text-sm font-bold uppercase" />
+          <input id="createName" type="text" required placeholder="Họ và tên học sinh"
+            class="w-full px-3.5 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-slate-400 text-sm font-semibold" />
+          <input id="createUnit" type="text" value="12 Toán Lí" placeholder="Lớp hoặc Mã HS liên kết"
+            class="w-full px-3.5 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-slate-400 text-sm" />
+          <button type="submit" class="w-full py-3.5 rounded-xl bg-gradient-to-r from-emerald-400 to-cyan-400 text-slate-950 font-black text-sm shadow-lg">
+            CẤP TÀI KHOẢN & LƯU GSHEET
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- TAB 2: DUYỆT ĐƠN NGHỈ PHÉP -->
+    <div id="gvTab-leaves" class="hidden gv-glass rounded-3xl p-6 space-y-3">
+      <h2 class="text-lg font-extrabold text-cyan-200 mb-3">Danh sách Đơn xin nghỉ phép</h2>
+      <div id="gvLeavesContainer" class="space-y-3"></div>
+    </div>
+
+    <!-- TAB 3: DUYỆT ĐẶT PHÒNG HỌC – LÀM VIỆC -->
+    <div id="gvTab-rooms" class="hidden gv-glass rounded-3xl p-6 space-y-4">
+      <h2 class="text-lg font-extrabold text-cyan-200">Quản lý Phòng & Yêu cầu đặt phòng</h2>
+      <div id="gvBookingsContainer" class="space-y-3"></div>
+    </div>
+  </div>
+
+  <script>
+    // =========================================================================
+    // CẤU HÌNH ĐỒNG BỘ GOOGLE SHEETS THỜI GIAN THỰC (DÙNG CHUNG 4 TRANG)
+    // =========================================================================
+    const DEFAULT_GSHEET_URL = "";
+    const DB_KEY = 'HUE_CAMPUS_STANDALONE_DB_V2';
+    const URL_KEY = 'HUE_CAMPUS_GSHEET_WEBAPP_URL';
+    const SESSION_KEY = 'HUE_CAMPUS_ACTIVE_SESSION';
+    const bc = ('BroadcastChannel' in window) ? new BroadcastChannel('hue_smart_campus_sync_v2') : null;
+
+    const INITIAL_DB = {
+      users: [
+        { ID: 'HS01', HoTen: 'NGÔ HOÀNG MINH ĐẠT', VaiTro: 'student', Lop_DonVi: '12 Toán Lí', DiemRenLuyen: 95, TrangThai: 'Chờ phụ huynh duyệt' },
+        { ID: 'HS02', HoTen: 'NGÔ HOÀNG ANH QUÂN', VaiTro: 'student', Lop_DonVi: '12 Toán Lí', DiemRenLuyen: 98, TrangThai: 'Đi trễ - Vào lớp lúc 20:43' },
+        { ID: 'HS03', HoTen: 'NGUYỄN HOÀNG BẢO ANH', VaiTro: 'student', Lop_DonVi: '12 Toán Lí', DiemRenLuyen: 100, TrangThai: 'Đang ở lớp' },
+        { ID: 'PH01', HoTen: 'PHỤ HUYNH EM ĐẠT', VaiTro: 'parent', Lop_DonVi: 'HS01', DiemRenLuyen: 100, TrangThai: 'Liên kết HS01' },
+        { ID: 'GV01', HoTen: 'CÔ HIỀN', VaiTro: 'teacher', Lop_DonVi: 'GVCN 12 Toán Lí', DiemRenLuyen: 100, TrangThai: 'Trực tuyến' }
+      ],
+      attendanceLogs: [
+        { MaBanGhi: 'DD-01', MaHS: 'HS02', HoTen: 'NGÔ HOÀNG ANH QUÂN', Loai: 'Đi trễ', ThoiGian: '20:43 hôm nay', LyDo: 'Vào lớp muộn', BienDongDiem: '-2' },
+        { MaBanGhi: 'DD-02', MaHS: 'HS03', HoTen: 'NGUYỄN HOÀNG BẢO ANH', Loai: 'Có mặt', ThoiGian: '07:05 hôm nay', LyDo: 'Báo danh đúng giờ', BienDongDiem: '0' }
+      ],
+      leaves: [
+        {
+          MaDon: 'NP-101',
+          MaHS: 'HS01',
+          HoTen: 'NGÔ HOÀNG MINH ĐẠT',
+          NgayNghi: new Date().toISOString().split('T')[0],
+          LoaiNghi: 'Nghỉ ốm / Bệnh',
+          LyDo: 'bệnh',
+          TrangThai: 'Chờ phụ huynh duyệt',
+          ThoiGianGui: '07:10 hôm nay'
+        }
+      ],
+      rooms: [
+        { MaPhong: 'P101', TenPhong: 'Phòng Học 101', Loai: 'Phòng học thông minh', SucChua: 40, ThietBi: 'Máy chiếu, Điều hòa, Bảng từ', TinhTrang: 'Trống' },
+        { MaPhong: 'P102', TenPhong: 'Phòng Học 102', Loai: 'Phòng học chuyên đề', SucChua: 40, ThietBi: 'Máy chiếu, Điều hòa, Âm thanh', TinhTrang: 'Đang sử dụng' },
+        { MaPhong: 'PTH1', TenPhong: 'Phòng Thực Hành Lý - Tin', Loai: 'Phòng thí nghiệm', SucChua: 30, ThietBi: '25 Máy tính, Bộ thí nghiệm', TinhTrang: 'Trống' },
+        { MaPhong: 'PH-A', TenPhong: 'Phòng Họp Nhóm A', Loai: 'Không gian làm việc', SucChua: 15, ThietBi: 'Màn hình TV 65", Wifi tốc độ cao', TinhTrang: 'Trống' }
+      ],
+      bookings: [
+        {
+          MaDat: 'DP-201',
+          MaPhong: 'P102',
+          TenPhong: 'Phòng Học 102',
+          Ngay: new Date().toISOString().split('T')[0],
+          KhungGio: '07:30 - 09:30',
+          NguoiDat: 'GV. Cô Hiền (12 Toán Lí)',
+          MucDich: 'Bồi dưỡng học sinh giỏi Vật Lí',
+          TrangThai: 'Đã duyệt'
+        }
+      ]
+    };
+
+    function getGSheetUrl() {
+      return localStorage.getItem(URL_KEY) || DEFAULT_GSHEET_URL || '';
+    }
+
+    function getDB() {
+      try {
+        const raw = localStorage.getItem(DB_KEY);
+        if (raw) return JSON.parse(raw);
+      } catch (e) {}
+      localStorage.setItem(DB_KEY, JSON.stringify(INITIAL_DB));
+      return JSON.parse(JSON.stringify(INITIAL_DB));
+    }
+
+    function getSession() {
+      try {
+        const raw = localStorage.getItem(SESSION_KEY);
+        if (raw) return JSON.parse(raw);
+      } catch (e) {}
+      return null;
+    }
+
+    function setSession(userObj) {
+      if (userObj) localStorage.setItem(SESSION_KEY, JSON.stringify(userObj));
+      else localStorage.removeItem(SESSION_KEY);
+    }
+
+    // Chuyển trang thông minh: Hoạt động cả khi chạy file .html độc lập lẫn trong khung xem trước
+    function goToStandalonePage(targetFile) {
+      if (window.parent && window.parent !== window && typeof window.parent.navigatePage === 'function') {
+        window.parent.navigatePage(targetFile);
+      } else {
+        window.location.href = targetFile;
+      }
+    }
+
+    // Lưu DB & Đồng bộ hai chiều lên Google Sheets
+    async function saveAndPushDB(db, notifyText) {
+      localStorage.setItem(DB_KEY, JSON.stringify(db));
+      if (bc) bc.postMessage({ type: 'SYNC_DB', db });
+      if (typeof onDatabaseUpdated === 'function') onDatabaseUpdated(db);
+
+      const url = getGSheetUrl();
+      if (url) {
+        updateSyncIndicator('syncing', 'Đang đồng bộ GSheet...');
+        try {
+          await fetch(url, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'SYNC_ALL', data: db })
+          });
+          updateSyncIndicator('online', 'Google Sheets Real-time');
+        } catch (e) {
+          updateSyncIndicator('error', 'Lỗi mạng (Đã lưu cục bộ)');
+        }
+      } else {
+        updateSyncIndicator('local', 'Real-time Local Sync');
+      }
+      if (notifyText) showToast(notifyText, 'success');
+    }
+
+    // Kéo dữ liệu mới nhất từ Google Sheets mỗi 4 giây
+    async function pullFromGSheet(manual = false) {
+      const url = getGSheetUrl();
+      if (!url) {
+        updateSyncIndicator('local', 'Real-time Local Sync');
+        if (manual) showToast('Chưa gắn URL Google Sheets. Đang đồng bộ thời gian thực qua trình duyệt!', 'info');
+        return;
+      }
+      try {
+        const res = await fetch(url);
+        const json = await res.json();
+        if (json && json.status === 'success') {
+          const current = getDB();
+          if (Array.isArray(json.users) && json.users.length > 0) current.users = json.users;
+          if (Array.isArray(json.attendanceLogs)) current.attendanceLogs = json.attendanceLogs;
+          if (Array.isArray(json.leaves)) current.leaves = json.leaves;
+          if (Array.isArray(json.bookings)) current.bookings = json.bookings;
+          localStorage.setItem(DB_KEY, JSON.stringify(current));
+          if (typeof onDatabaseUpdated === 'function') onDatabaseUpdated(current);
+          updateSyncIndicator('online', 'Google Sheets Real-time');
+          if (manual) showToast('Đã cập nhật dữ liệu mới nhất từ Google Sheets!', 'success');
+        }
+      } catch (err) {
+        updateSyncIndicator('error', 'Chờ kết nối Google Sheets');
+      }
+    }
+
+    function updateSyncIndicator(state, text) {
+      const el = document.getElementById('pageSyncStatus');
+      if (!el) return;
+      const dotColor = state === 'online' ? 'bg-emerald-400' : state === 'syncing' ? 'bg-amber-400' : state === 'error' ? 'bg-rose-400' : 'bg-cyan-400';
+      el.innerHTML = '<span class="w-2 h-2 rounded-full ' + dotColor + ' inline-block mr-1.5 animate-pulse"></span>' + text;
+    }
+
+    function showToast(msg, type = 'info') {
+      let box = document.getElementById('toastBox');
+      if (!box) {
+        box = document.createElement('div');
+        box.id = 'toastBox';
+        box.className = 'fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4 sm:px-0';
+        document.body.appendChild(box);
+      }
+      const colors = {
+        success: 'bg-emerald-600 border-emerald-400 text-white',
+        error: 'bg-rose-600 border-rose-400 text-white',
+        info: 'bg-slate-900 border-cyan-500 text-white'
+      };
+      const item = document.createElement('div');
+      item.className = 'pointer-events-auto px-4 py-3 rounded-2xl border shadow-xl text-xs sm:text-sm font-medium transition-all duration-300 ' + (colors[type] || colors.info);
+      item.textContent = msg;
+      box.appendChild(item);
+      setTimeout(() => { item.style.opacity = '0'; setTimeout(() => item.remove(), 300); }, 3500);
+    }
+
+    window.addEventListener('storage', (e) => {
+      if (e.key === DB_KEY && e.newValue && typeof onDatabaseUpdated === 'function') {
+        onDatabaseUpdated(JSON.parse(e.newValue));
+      }
+    });
+    if (bc) {
+      bc.onmessage = (ev) => {
+        if (ev.data && ev.data.type === 'SYNC_DB' && typeof onDatabaseUpdated === 'function') {
+          onDatabaseUpdated(ev.data.db);
+        }
+      };
+    }
+    setInterval(() => { if (getGSheetUrl()) pullFromGSheet(false); }, 4000);
+  </script>
+  <script>
+    function switchGvTab(t) {
+      ['class', 'leaves', 'rooms'].forEach(k => {
+        document.getElementById('gvTab-' + k).classList.toggle('hidden', k !== t);
+        document.getElementById('gvBtn-' + k).className = k === t
+          ? 'px-3.5 py-2 rounded-xl text-xs font-extrabold bg-emerald-400 text-slate-950'
+          : 'px-3.5 py-2 rounded-xl text-xs font-bold bg-white/10 hover:bg-white/20';
+      });
+    }
+
+    function onDatabaseUpdated(db) {
+      const sess = getSession();
+      const gvName = (sess && sess.activeRole === 'teacher') ? sess.HoTen : 'Cô Hiền';
+      document.getElementById('gvTitle').textContent = 'GV: ' + gvName;
+
+      const students = db.users.filter(u => u.VaiTro === 'student');
+      const lateList = students.filter(s => (s.TrangThai || '').toLowerCase().includes('trễ'));
+
+      const alertBox = document.getElementById('lateRedAlert');
+      if (lateList.length > 0) {
+        alertBox.classList.remove('hidden');
+        document.getElementById('lateRedAlertText').textContent = 'TRỄ: ' + lateList.map(s => s.HoTen).join(', ');
+      } else {
+        alertBox.classList.add('hidden');
+      }
+
+      document.getElementById('studentCardsContainer').innerHTML = students.map(s => {
+        const isLate = (s.TrangThai || '').toLowerCase().includes('trễ');
+        return `
+          <div class="rounded-2xl bg-white/10 border border-white/15 p-4 flex items-center justify-between gap-3">
+            <div>
+              <div class="font-black text-sm sm:text-base uppercase">${s.HoTen}</div>
+              <div class="text-xs text-slate-300 mt-0.5">ID: <b class="text-white">${s.ID}</b> | Điểm: <b class="text-cyan-300 text-sm">${s.DiemRenLuyen}</b></div>
+              <div class="text-xs font-semibold mt-1 ${isLate ? 'text-rose-400' : 'text-emerald-300'}">${s.TrangThai || 'Đang ở lớp'}</div>
+            </div>
+            <div class="flex items-center gap-2">
+              <button onclick="updateScore('${s.ID}', -2, true)" class="w-10 h-10 rounded-xl bg-rose-400 hover:bg-rose-500 text-slate-950 font-black text-lg">-</button>
+              <button onclick="updateScore('${s.ID}', 2, false)" class="w-10 h-10 rounded-xl bg-emerald-400 hover:bg-emerald-500 text-slate-950 font-black text-lg">+</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      const pendingLeaves = db.leaves.filter(l => l.TrangThai.includes('Chờ'));
+      const pendingBookings = db.bookings.filter(b => b.TrangThai.includes('Chờ'));
+      document.getElementById('leaveBadge').textContent = pendingLeaves.length;
+      document.getElementById('roomBadge').textContent = pendingBookings.length;
+
+      document.getElementById('gvLeavesContainer').innerHTML = db.leaves.map(l => `
+        <div class="p-4 rounded-2xl bg-white/10 border border-white/15 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <div class="font-extrabold text-sm">${l.HoTen} (${l.MaHS}) • Ngày ${l.NgayNghi}</div>
+            <div class="text-xs text-cyan-200">Lý do: "${l.LyDo}" • Trạng thái: <b>${l.TrangThai}</b></div>
+          </div>
+          <div class="flex gap-2">
+            ${l.TrangThai.includes('Chờ') ? `
+              <button onclick="approveLeave('${l.MaDon}', 'Đã duyệt')" class="px-3.5 py-1.5 rounded-xl bg-emerald-500 text-slate-950 font-bold text-xs">Phê duyệt</button>
+              <button onclick="approveLeave('${l.MaDon}', 'Từ chối')" class="px-3.5 py-1.5 rounded-xl bg-rose-500 text-white font-bold text-xs">Từ chối</button>
+            ` : '<span class="text-xs text-slate-400">Đã xử lý</span>'}
+          </div>
+        </div>
+      `).join('');
+
+      document.getElementById('gvBookingsContainer').innerHTML = db.bookings.map(b => `
+        <div class="p-4 rounded-2xl bg-white/10 border border-white/15 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <div class="font-extrabold text-sm">${b.TenPhong} • ${b.Ngay} (${b.KhungGio})</div>
+            <div class="text-xs text-cyan-200">Người đặt: ${b.NguoiDat} • Mục đích: ${b.MucDich} • <b>${b.TrangThai}</b></div>
+          </div>
+          <div class="flex gap-2">
+            ${b.TrangThai.includes('Chờ') ? `
+              <button onclick="approveRoom('${b.MaDat}', 'Đã duyệt')" class="px-3.5 py-1.5 rounded-xl bg-emerald-500 text-slate-950 font-bold text-xs">Duyệt phòng</button>
+              <button onclick="approveRoom('${b.MaDat}', 'Từ chối')" class="px-3.5 py-1.5 rounded-xl bg-rose-500 text-white font-bold text-xs">Từ chối</button>
+            ` : '<span class="text-xs text-slate-400">Đã xử lý</span>'}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function updateScore(id, delta, isLate) {
+      const db = getDB();
+      const st = db.users.find(u => u.ID === id);
+      if (!st) return;
+      st.DiemRenLuyen = Math.max(0, Math.min(100, Number(st.DiemRenLuyen) + delta));
+      const t = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+      st.TrangThai = isLate ? ('Đi trễ - Vào lớp lúc ' + t) : 'Đang ở lớp';
+      db.attendanceLogs.unshift({
+        MaBanGhi: 'DD-' + Math.floor(100 + Math.random() * 900),
+        MaHS: st.ID, HoTen: st.HoTen, Loai: isLate ? 'Đi trễ' : 'Cộng điểm',
+        ThoiGian: t + ' hôm nay', LyDo: isLate ? 'Giáo viên ghi nhận đi trễ' : 'Giáo viên cộng điểm',
+        BienDongDiem: delta > 0 ? ('+' + delta) : String(delta)
+      });
+      saveAndPushDB(db, 'Đã cập nhật điểm của ' + st.HoTen);
+    }
+
+    function handleCreateUser(e) {
+      e.preventDefault();
+      const db = getDB();
+      const role = document.getElementById('createRole').value;
+      const id = document.getElementById('createId').value.trim().toUpperCase();
+      const name = document.getElementById('createName').value.trim().toUpperCase();
+      const unit = document.getElementById('createUnit').value.trim();
+      if (db.users.some(u => u.ID === id)) {
+        showToast('Mã ' + id + ' đã tồn tại!', 'error');
+        return;
+      }
+      db.users.push({
+        ID: id, HoTen: name, VaiTro: role, Lop_DonVi: unit || '12 Toán Lí',
+        DiemRenLuyen: 100, TrangThai: role === 'student' ? 'Đang ở lớp' : 'Trực tuyến'
+      });
+      document.getElementById('createId').value = '';
+      document.getElementById('createName').value = '';
+      saveAndPushDB(db, 'Đã cấp tài khoản ' + id + ' thành công!');
+    }
+
+    function approveLeave(maDon, status) {
+      const db = getDB();
+      const l = db.leaves.find(x => x.MaDon === maDon);
+      if (!l) return;
+      l.TrangThai = status;
+      const st = db.users.find(u => u.ID === l.MaHS);
+      if (st) st.TrangThai = status === 'Đã duyệt' ? ('Nghỉ phép (' + l.NgayNghi + ')') : 'Đơn nghỉ bị từ chối';
+      saveAndPushDB(db, 'Đã cập nhật đơn ' + maDon + ': ' + status);
+    }
+
+    function approveRoom(maDat, status) {
+      const db = getDB();
+      const b = db.bookings.find(x => x.MaDat === maDat);
+      if (!b) return;
+      b.TrangThai = status;
+      if (status === 'Đã duyệt') {
+        const r = db.rooms.find(x => x.MaPhong === b.MaPhong);
+        if (r) r.TinhTrang = 'Đang sử dụng';
+      }
+      saveAndPushDB(db, 'Đã ' + status.toLowerCase() + ' đặt phòng ' + maDat);
+    }
+
+    function exitTeacher() {
+      setSession(null);
+      goToStandalonePage('login.html');
+    }
+
+    window.onload = function() {
+      onDatabaseUpdated(getDB());
+      pullFromGSheet(false);
+    };
+  </script>
+</body>
+</html>
